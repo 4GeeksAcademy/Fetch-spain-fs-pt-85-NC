@@ -1,176 +1,139 @@
 import React, { useEffect, useState } from "react";
 
-// create your first component
 const Home = () => {
     const [inputValue, setInputValue] = useState("");
     const [tareas, setTareas] = useState([]);
     const [error, setError] = useState(null);
-    const apiURL = "https://playground.4geeks.com/todo/users/nachocordoba";
-    const todosURL = "https://playground.4geeks.com/todo/todos/nachocordoba"; // URL para acceder a todas las tareas
-    const deleteURL = "https://playground.4geeks.com/todo/todos/0"; // URL para eliminar todas las tareas
-    const idURL = "https://playground.4geeks.com/todo/todos/13"; // URL para actualizar una tarea con id 13
+    const [contadorId, setContadorId] = useState(1);
+    const apiURL = "https://playground.4geeks.com/todo/users/nachocordoba";  
 
     // Crear usuario
     const crearUsuario = async () => {
         try {
-            const comprobarUsu = await fetch(apiURL, { method: "GET" });
-            if (comprobarUsu.ok) {
-                console.log("El usuario ya existe, no es necesario crear uno nuevo.");
-                return;
+            const response = await fetch(apiURL, { method: "GET",
+                headers: {"Accept": "application/json"}
+             });
+    
+            if (!response.ok) {
+                console.log("El usuario no existe, intentando crear uno nuevo.");
+                const createResponse = await fetch(apiURL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: "nachocordoba" }),
+                });
+    
+                if (!createResponse.ok) {
+                    console.log("No se pudo crear el usuario.");
+                    setError("No se pudo crear el usuario.");
+                    return;
+                }
+    
+                console.log("Usuario creado exitosamente.");
             }
-
-            const respuesta = await fetch(apiURL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: "nachocordoba" }),
-            });
-
-            if (!respuesta.ok) {
-                console.warn(`No se pudo crear el usuario: ${respuesta.statusText}`);
-                setError(`No se pudo crear el usuario (${respuesta.statusText})`);
-                return;
-            }
-
-            console.log("Usuario creado exitosamente.");
         } catch (error) {
-            console.error("Error al crear el usuario:", error.message);
-            setError("Ocurrió un error al crear el usuario.");
+            console.log("Error al crear usuario:", error);
+            setError("Error al crear usuario.");
         }
     };
 
-    // Obtener las tareas
+    // Obtener tareas
     const getInfoTareas = async () => {
         try {
-            const respuesta = await fetch(todosURL, { method: "GET" });
-            if (!respuesta.ok) {
-                console.warn(`No se pudo obtener las tareas: ${respuesta.statusText}`);
-                setError(`No se pudo obtener las tareas (${respuesta.statusText})`);
+            const response = await fetch(apiURL, { method: "GET",
+                headers: {"Accept": "application/json"}
+             });
+    
+            if (!response.ok) {
+                console.log("No se pudieron obtener las tareas.");
+                setError("No se pudieron obtener las tareas.");
                 return;
             }
-            const data = await respuesta.json();
-            console.log("Datos obtenidos:", data);
-
-            if (Array.isArray(data.todos)) {
-                setTareas(data.todos);
-            } else {
-                setTareas([]);
-            }
+    
+            const data = await response.json();
+            console.log("Tareas obtenidas:", data);
+            setTareas(data.todos || []);
         } catch (error) {
-            console.error("Error al obtener las tareas:", error.message);
-            setError("Ocurrió un error al conectar con el servidor.");
+            console.log("Error al obtener tareas:", error);
+            setError("Error al obtener tareas.");
         }
     };
 
     // Agregar tarea
     const agregarTareas = async (label) => {
+        const nuevaTarea = { id: contadorId, label, is_done: true };
+        const nuevasTareas = tareas.concat(nuevaTarea); 
+        setContadorId(contadorId + 1);
+    
         try {
-            const nuevaTarea = {
-                label,
-                is_done: false,
-                id: Date.now(), // Generamos un ID único para la tarea
-            };
-
-            // Hacemos PUT para reemplazar todas las tareas
-            const respuesta = await fetch(todosURL, {
+            const response = await fetch('https://playground.4geeks.com/todo/todos/13', {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ todos: [...tareas, nuevaTarea] }),
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({
+                    "detail": [
+                        {
+                            "loc": ["string", 0],
+                            "msg": "Missing or incorrect data",
+                            "type": "validation_error"
+                        }
+                    ]
+                })
             });
-
-            if (!respuesta.ok) {
-                console.warn(`No se pudo agregar la tarea: ${respuesta.statusText}`);
-                setError(`No se pudo agregar la tarea (${respuesta.statusText})`);
+    
+            if (!response.ok) {
+                console.log("No se pudo agregar la tarea:", response.statusText);
+                setError("No se pudo agregar la tarea.");
                 return;
             }
-
+            setTareas(nuevasTareas);
             console.log("Tarea agregada exitosamente.");
-            await getInfoTareas();
+            console.log(tareas.map(tarea => tarea.id));
+
         } catch (error) {
-            console.error("Error al agregar la tarea:", error.message);
-            setError("Ocurrió un error al agregar la tarea.");
+            console.log("Error al agregar tarea:", error);
+            setError("Error al agregar tarea.");
         }
     };
 
     // Eliminar tarea
     const eliminarTarea = async (id) => {
+        const nuevasTareas = tareas.filter((tarea) => tarea.id !== id); 
         try {
-            const nuevasTareas = tareas.filter((tarea) => tarea.id !== id);
-
-            const respuesta = await fetch(todosURL, {
+            const response = await fetch('https://playground.4geeks.com/todo/todos/13', {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ todos: nuevasTareas }),
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    "detail": [
+                        {
+                            "loc": ["string", 0],
+                            "msg": "Missing or incorrect data",
+                            "type": "validation_error"
+                        }
+                    ]
+                }), 
             });
-
-            if (!respuesta.ok) {
-                console.warn(`No se pudo eliminar la tarea: ${respuesta.statusText}`);
-                setError(`No se pudo eliminar la tarea (${respuesta.statusText})`);
+    
+            if (!response.ok) {
+                const data = await response.json();
+                console.log("No se pudo eliminar la tarea:", data);
+                setError("No se pudo eliminar la tarea.");
                 return;
             }
-
+            setTareas(nuevasTareas); 
+            
             console.log("Tarea eliminada exitosamente.");
-            await getInfoTareas();
+            await getInfoTareas(); 
         } catch (error) {
-            console.error("Error al eliminar la tarea:", error.message);
-            setError("Ocurrió un error al eliminar la tarea.");
+            console.log("Error al eliminar tarea:", error);
+            setError("Error al eliminar tarea.");
         }
-    };
-
-    // Limpiar todas las tareas
-    const limpiarTareas = async () => {
-        try {
-            const respuesta = await fetch(deleteURL, {
-                method: "DELETE", // Usamos DELETE para borrar todas las tareas
-                headers: { "Content-Type": "application/json" },
-            });
-
-            if (!respuesta.ok) {
-                console.warn(`No se pudieron limpiar las tareas: ${respuesta.statusText}`);
-                setError(`No se pudieron limpiar las tareas (${respuesta.statusText})`);
-                return;
-            }
-
-            setTareas([]); // Limpiamos las tareas localmente
-            console.log("Todas las tareas han sido eliminadas.");
-        } catch (error) {
-            console.error("Error al limpiar las tareas:", error.message);
-            setError("Ocurrió un error al limpiar las tareas.");
-        }
-    };
-
-    // Actualizar tarea específica con PUT
-    const actualizarTarea = async () => {
-        try {
-            const tareaActualizada = {
-                label: "Tarea Actualizada", // Cambia el nombre de la tarea si lo deseas
-                is_done: true, // Cambia el estado de la tarea si lo deseas
-            };
-
-            const respuesta = await fetch(idURL, {
-                method: "PUT", // Usamos PUT para actualizar una tarea específica
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(tareaActualizada),
-            });
-
-            if (!respuesta.ok) {
-                console.warn(`No se pudo actualizar la tarea: ${respuesta.statusText}`);
-                setError(`No se pudo actualizar la tarea (${respuesta.statusText})`);
-                return;
-            }
-
-            console.log("Tarea actualizada exitosamente.");
-            await getInfoTareas();
-        } catch (error) {
-            console.error("Error al actualizar la tarea:", error.message);
-            setError("Ocurrió un error al actualizar la tarea.");
-        }
-    };
+    };    
 
     useEffect(() => {
-        (async () => {
-            await crearUsuario();
-            await getInfoTareas();
-        })();
+        crearUsuario();
+        getInfoTareas();
     }, []);
 
     return (
@@ -196,8 +159,8 @@ const Home = () => {
                         No hay tareas pendientes
                     </li>
                 ) : (
-                    tareas.map((item, index) => (
-                        <li key={index} className="list-group-item d-flex justify-content-between">
+                    tareas.map((item, id) => (
+                        <li key={id} className="list-group-item d-flex justify-content-between">
                             <span>{item.label}</span>
                             <i
                                 className="fas fa-trash-alt eliminar"
@@ -212,12 +175,6 @@ const Home = () => {
                     {tareas.length} {tareas.length === 1 ? "tarea" : "tareas"}
                 </div>
             )}
-            <button className="btn btn-danger mt-3" onClick={limpiarTareas}>
-                Limpiar todas las tareas
-            </button>
-            <button className="btn btn-warning mt-3" onClick={actualizarTarea}>
-                Actualizar tarea específica
-            </button>
             {error && <p className="text-danger text-center mt-2">{error}</p>}
         </div>
     );
