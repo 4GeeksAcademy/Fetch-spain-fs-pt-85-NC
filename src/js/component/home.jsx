@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
 
 const Home = () => {
     const [inputValue, setInputValue] = useState("");
@@ -163,7 +165,7 @@ const Home = () => {
                         <li key={id} className="list-group-item d-flex justify-content-between">
                             <span>{item.label}</span>
                             <i
-                                className="fas fa-trash-alt eliminar"
+                                className="bi bi-trash eliminar"
                                 onClick={() => eliminarTarea(item.id)}
                             ></i>
                         </li>
